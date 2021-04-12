@@ -1,34 +1,61 @@
-import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { Course } from './course';
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const app = express();
 
-@Injectable({
-    providedIn: 'root'
-})
-export class CourseService {
-    private courseUrl = 'http://localhost:3100/api/courses';
+var currentUser;
 
-    constructor(private httpCliente: HttpClient) {
-
-    }
-
-    retrieveAll(): Observable<Course[]> {
-        return this.httpCliente.get<Course[]>(this.courseUrl);
-    }
-    retrieveById(id: number): Observable<Course> {
-        return this.httpCliente.get<Course>(`${this.courseUrl}/${id}`);
-    }
-    save(course: Course): Observable<Course> {
-        if (course.id) {
-            return this.httpCliente.put<Course>(`${this.courseUrl}/${course.id}`, course);
-        } else {
-            return this.httpCliente.post<Course>(this.courseUrl, course);
-        }
-    }
+var corsOptions = {
+  orgim: '/',
+  optionsSuccessStatus: 200
 }
 
-const COURSES: Course[] = [
+app.use(cors(corsOptions));
+app.use(bodyParser.json());
+
+app.listen(3100, () => {
+  console.log('Server Startedin port http://localhost:3100');
+});
+
+app.route('/api/courses').get((request, response) => {
+  response.send(COURSES);
+});
+
+app.route('/api/courses').post((request, response) => {
+  let course = request.body;
+
+  const firstId = COURSES ? Math.max.apply(null, COURSES.map(courseIterator => courseIterator.id)) + 1 : 1;
+  course.id = firstId;
+  COURSES.push(course);
+  
+
+  response.status(201).send(course);
+});
+
+app.route('/api/courses/:id').put((request, response) => {
+  const courseId = +request.params['id'];
+  const course = request.body;
+
+  const index = COURSES.findIndex(courseIterator => courseIterator.id === courseId);
+  COURSES[index] = course;
+
+  response.status(200).send(course);
+});
+
+app.route('/api/courses/:id').get((request, response) => {
+  const courseId = +request.params['id'];
+
+  response.status(200).send(COURSES.find(courseIterator => courseIterator.id === courseId));
+});
+
+app.route('/api/courses/:id').delete((request, response)=> {
+  const courseId = +request.params['id'];
+  COURSES = COURSES.filter(courseIterator => courseIterator.id !== courseId);
+  
+  response.status(204).send({});
+});
+
+var COURSES = [
     {
         id: 1,
         name: 'Angular: CLI',
@@ -84,4 +111,4 @@ const COURSES: Course[] = [
         price: 56.99,
         imageUrl: '/assets/images/animations.png',
     }
-]
+];
